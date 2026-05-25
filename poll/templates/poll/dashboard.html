@@ -1,0 +1,102 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Student Union Elections</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">Student Union Election System</a>
+        <div class="d-flex">
+            <a href="{% url 'logout' %}" class="btn btn-light">Logout</a>
+            <a href="{% url 'edit_profile' %}" class="btn btn-outline-secondary">Edit Profile</a>
+
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-info">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+    
+    <div class="text-center mb-4">
+        <h2 class="mb-2">Welcome</h2>
+          <div class="text-center mb-3">
+            {% if user.studentprofile.profile_pic and user.studentprofile.profile_pic.url %}
+                <img src="{{ user.studentprofile.profile_pic.url }}?v={{ user.studentprofile.profile_pic.update_time.timestamp }}"
+                     class="rounded-circle shadow" width="100" height="100">
+            {% else %}
+                <img src="{% static 'poll/images/images.png' %}" alt="Default Profile Picture"
+                class="rounded-circle shadow" width="100" height="100">
+            {% endif %}
+            <p class="mt-2"><strong>{{ user.username }}</strong></p>
+        </div>
+        </div>
+        <div class="text-center mb-4">
+            {% if phase %}
+                <span class="badge bg-success fs-5">
+                    {{ phase.phase }} Phase Active
+                </span>
+                
+                <div class="alert alert-success mt-3">
+                    {% if phase.phase == 'Nomination' %}
+                        Want to participate as a candidate? Come to the department office to submit your nomination.
+                    {% elif phase.phase == 'Voting' %}
+                        Cast your vote now! Voting is currently active.
+                    {% else %}
+                        Election results are available! <a href="{% url 'results' %}" class="btn btn-success">View Results</a>
+                    </div>
+                    {% endif %}
+                </div>
+            {% else %}
+            <span class="badge bg-warning text-dark fs-5">No Active Phase</span>
+                <div class="alert alert-secondary mt-3">
+                    There is currently no active election phase.
+                </div>
+            {% endif %}
+        </div>        
+        {% if phase and phase.phase == "Voting" %}
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-3">  <!-- 4 columns on medium screens -->
+            {% for candidate in candidates %}
+                <div class="col">
+                    <div class="card shadow-sm h-100">
+                        {% if candidate.photo %}
+                            <img src="{{ candidate.photo.url }}" class="card-img-top" 
+                                 alt="Candidate Photo" style="width: 100%; height: 150px; object-fit: cover;">
+                        {% else %}
+                            <img src="{% static 'images/default_candidate.jpg' %}" 
+                                 class="card-img-top" alt="Default Candidate" 
+                                 style="width: 100%; height: 150px; object-fit: cover;">
+                        {% endif %}
+                        <div class="card-body text-center">
+                            <h5 class="card-title">{{ candidate.name }}</h5>
+                            <p class="card-text"><strong>{{ candidate.position }}</strong></p>
+                            {% if candidate.position in voted_positions %}
+                                <button class="btn btn-secondary w-100" disabled>Already Voted</button>
+                            {% else %}
+                                <a href="{% url 'vote' candidate.id %}" class="btn btn-primary w-100">Vote</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="alert alert-warning text-center">
+            “The ballot is stronger than the bullet.”
+            -Abraham Lincoln
+        </div>
+    {% endif %}
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

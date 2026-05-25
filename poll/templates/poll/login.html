@@ -1,0 +1,465 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication - Student Union Elections</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #1d4ed8;
+            --primary-blue-hover: #1e40af;
+            --bg-dark: #0f172a;
+            --panel-dark: #1e293b;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --input-bg: #0f172a;
+            --input-border: #334155;
+            --card-bg: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #000;
+            color: var(--text-light);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            overflow: hidden;
+        }
+
+        .auth-container {
+            display: flex;
+            width: 100%;
+            max-width: 1200px;
+            height: 800px;
+            max-height: 90vh;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            background: var(--bg-dark);
+        }
+
+        /* Left Panel - Branding */
+        .branding-panel {
+            flex: 1;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            padding: 4rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .branding-panel::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 800;
+            font-size: 1.5rem;
+            z-index: 1;
+        }
+
+        .logo-icon {
+            background: white;
+            color: var(--primary-blue);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-size: 1.2rem;
+        }
+
+        .hero-text {
+            z-index: 1;
+            margin-top: -4rem;
+        }
+
+        .hero-text h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            letter-spacing: -1px;
+        }
+
+        .hero-text p {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.8);
+            max-width: 400px;
+            line-height: 1.6;
+        }
+
+        .feature-cards {
+            display: flex;
+            gap: 1rem;
+            z-index: 1;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            flex: 1;
+        }
+
+        .feature-card .icon {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-card p {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Right Panel - Auth Form */
+        .form-panel {
+            flex: 1;
+            background: var(--bg-dark);
+            padding: 4rem 6rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .auth-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 2rem;
+            letter-spacing: -0.5px;
+        }
+
+        .mode-toggle {
+            display: flex;
+            background: var(--panel-dark);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 2.5rem;
+            position: relative;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 10px 0;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            z-index: 1;
+            transition: color 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            color: var(--text-light);
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: calc(50% - 4px);
+            height: calc(100% - 8px);
+            background: var(--primary-blue);
+            border-radius: 8px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .mode-toggle.admin-mode .toggle-slider {
+            transform: translateX(100%);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1.2rem;
+        }
+
+        .form-control {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-light);
+            padding: 1rem 1rem 1rem 3rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.2);
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            font-size: 0.85rem;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            accent-color: var(--primary-blue);
+            width: 16px;
+            height: 16px;
+        }
+
+        .recover-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .recover-link:hover {
+            color: var(--text-light);
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 1.2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.1s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-submit:hover {
+            background: var(--primary-blue-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .register-link a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .alert-error, .alert-danger {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #4ade80;
+        }
+
+        @media (max-width: 900px) {
+            .branding-panel {
+                display: none;
+            }
+            .form-panel {
+                padding: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <!-- Left Panel -->
+        <div class="branding-panel">
+            <div class="logo-area">
+                <div class="logo-icon">✓</div>
+                SUES
+            </div>
+
+            <div class="hero-text">
+                <h1>Next Gen<br>Voting System.</h1>
+                <p>Experience the next generation of secure, transparent, and efficient student elections powered by modern web technologies.</p>
+            </div>
+
+            <div class="feature-cards">
+                <div class="feature-card">
+                    <div class="icon">🔒</div>
+                    <h3>100% Secure</h3>
+                    <p>Advanced security protocol</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">⚡</div>
+                    <h3>Real-time</h3>
+                    <p>Live election analytics</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="form-panel">
+            <h2 class="auth-title">Authentication</h2>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="mode-toggle" id="modeToggle">
+                <div class="toggle-slider"></div>
+                <div class="toggle-btn active" onclick="setMode('user')">USER MODE</div>
+                <div class="toggle-btn" onclick="setMode('admin')">ADMIN MODE</div>
+            </div>
+
+            <form method="post" action="{% url 'login' %}">
+                {% csrf_token %}
+                <input type="hidden" name="login_type" id="loginType" value="user">
+
+                <div class="form-group">
+                    <label class="form-label">Terminal Identifier</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">👤</span>
+                        <input type="text" name="identifier" id="identifierInput" class="form-control" required placeholder="Registration Number">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Security Protocol</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" name="password" class="form-control" required placeholder="••••••••">
+                    </div>
+                </div>
+
+                <div class="form-options">
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox">
+                        Remember identity
+                    </label>
+                    <a href="#" class="recover-link">RECOVER</a>
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    INITIALIZE SESSION →
+                </button>
+            </form>
+
+            <div class="register-link">
+                DON'T HAVE AN IDENTITY? <a href="{% url 'register' %}">REGISTER NOW</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setMode(mode) {
+            const toggle = document.getElementById('modeToggle');
+            const loginType = document.getElementById('loginType');
+            const btns = document.querySelectorAll('.toggle-btn');
+            const identifierInput = document.getElementById('identifierInput');
+
+            if (mode === 'admin') {
+                toggle.classList.add('admin-mode');
+                btns[0].classList.remove('active');
+                btns[1].classList.add('active');
+                loginType.value = 'admin';
+                identifierInput.placeholder = 'Admin Username';
+            } else {
+                toggle.classList.remove('admin-mode');
+                btns[1].classList.remove('active');
+                btns[0].classList.add('active');
+                loginType.value = 'user';
+                identifierInput.placeholder = 'Registration Number';
+            }
+        }
+    </script>
+</body>
+</html>

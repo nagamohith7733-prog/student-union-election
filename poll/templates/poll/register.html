@@ -1,0 +1,494 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration - Student Union Elections</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #1d4ed8;
+            --primary-blue-hover: #1e40af;
+            --bg-dark: #0f172a;
+            --panel-dark: #1e293b;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --input-bg: #0f172a;
+            --input-border: #334155;
+            --card-bg: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #000;
+            color: var(--text-light);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            overflow: hidden;
+        }
+
+        .auth-container {
+            display: flex;
+            width: 100%;
+            max-width: 1200px;
+            height: 850px;
+            max-height: 95vh;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            background: var(--bg-dark);
+        }
+
+        /* Left Panel - Branding */
+        .branding-panel {
+            flex: 1;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            padding: 4rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .branding-panel::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 800;
+            font-size: 1.5rem;
+            z-index: 1;
+        }
+
+        .logo-icon {
+            background: white;
+            color: var(--primary-blue);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-size: 1.2rem;
+        }
+
+        .hero-text {
+            z-index: 1;
+            margin-top: -4rem;
+        }
+
+        .hero-text h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            letter-spacing: -1px;
+        }
+
+        .hero-text p {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.8);
+            max-width: 400px;
+            line-height: 1.6;
+        }
+
+        /* Right Panel - Auth Form */
+        .form-panel {
+            flex: 1;
+            background: var(--bg-dark);
+            padding: 3rem 4rem;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        /* Custom Scrollbar for form panel */
+        .form-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+        .form-panel::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+        .form-panel::-webkit-scrollbar-thumb {
+            background: var(--panel-dark);
+            border-radius: 4px;
+        }
+
+        .auth-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.5px;
+            flex-shrink: 0;
+        }
+
+        .mode-toggle {
+            display: flex;
+            background: var(--panel-dark);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 2rem;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 10px 0;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            z-index: 1;
+            transition: color 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            color: var(--text-light);
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: calc(50% - 4px);
+            height: calc(100% - 8px);
+            background: var(--primary-blue);
+            border-radius: 8px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .mode-toggle.admin-mode .toggle-slider {
+            transform: translateX(100%);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .form-control {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-light);
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.2);
+        }
+
+        select.form-control {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem top 50%;
+            background-size: 0.65rem auto;
+        }
+
+        input[type="file"].form-control {
+            padding: 0.6rem 1rem;
+            color: var(--text-muted);
+        }
+
+        input[type="file"]::file-selector-button {
+            background: var(--panel-dark);
+            color: var(--text-light);
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            margin-right: 1rem;
+            cursor: pointer;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 1.2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.1s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 1.5rem;
+        }
+
+        .btn-submit:hover {
+            background: var(--primary-blue-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .register-link a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .alert-error, .alert-danger {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+        }
+
+        /* Hide student fields when in admin mode */
+        .admin-mode-active .student-only {
+            display: none !important;
+        }
+
+        /* Hide admin fields when in user mode */
+        body:not(.admin-mode-active) .admin-only {
+            display: none !important;
+        }
+
+        @media (max-width: 900px) {
+            .branding-panel {
+                display: none;
+            }
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <!-- Left Panel -->
+        <div class="branding-panel">
+            <div class="logo-area">
+                <div class="logo-icon">✓</div>
+                SUES
+            </div>
+
+            <div class="hero-text">
+                <h1>Join the<br>Network.</h1>
+                <p>Register your identity to participate in the most secure student election system.</p>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="form-panel">
+            <h2 class="auth-title">Registration</h2>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            {% if form.errors or profile_form.errors %}
+                <div class="alert alert-danger">
+                    Please correct the errors below.
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div class="mode-toggle" id="modeToggle">
+                <div class="toggle-slider"></div>
+                <div class="toggle-btn active" onclick="setMode('user')">USER MODE</div>
+                <div class="toggle-btn" onclick="setMode('admin')">ADMIN MODE</div>
+            </div>
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="register_type" id="registerType" value="user">
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control" required>
+                        {{ form.username.errors }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" name="email" class="form-control" required>
+                        {{ form.email.errors }}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Security Protocol (Password)</label>
+                        <input type="password" name="password" class="form-control" required>
+                        {{ form.password.errors }}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Confirm Protocol</label>
+                        <input type="password" name="confirm_password" class="form-control" required>
+                        {{ form.confirm_password.errors }}
+                    </div>
+
+                    <!-- Admin Only Field -->
+                    <div class="form-group full-width admin-only">
+                        <label class="form-label" style="color: #60a5fa;">Admin Secret Code</label>
+                        <input type="password" name="admin_secret_code" id="adminSecret" class="form-control" placeholder="Required for Admin Registration">
+                    </div>
+
+                    <!-- Student Only Fields -->
+                    <div class="form-group student-only">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" name="Full_name" id="fullName" class="form-control" required>
+                        {{ form.Full_name.errors }}
+                    </div>
+
+                    <div class="form-group student-only">
+                        <label class="form-label">Registration Number</label>
+                        <input type="text" name="registration_number" id="regNum" class="form-control" required>
+                        {{ form.registration_number.errors }}
+                    </div>
+
+                    <div class="form-group student-only">
+                        <label class="form-label">Course</label>
+                        <input type="text" name="course" id="course" class="form-control" required>
+                        {{ form.course.errors }}
+                    </div>
+
+                    <div class="form-group student-only">
+                        <label class="form-label">Year</label>
+                        <select name="year" id="year" class="form-control" required>
+                            <option value="1">First Year</option>
+                            <option value="2">Second Year</option>
+                            <option value="3">Third Year</option>
+                            <option value="4">Fourth Year</option>
+                        </select>
+                        {{ form.year.errors }}
+                    </div>
+
+                    <div class="form-group full-width student-only">
+                        <label class="form-label">Profile Picture (Optional)</label>
+                        <input type="file" name="profile_pic" class="form-control" accept="image/*">
+                        {{ form.profile_pic.errors }}
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    ESTABLISH IDENTITY →
+                </button>
+            </form>
+
+            <div class="register-link">
+                ALREADY HAVE AN IDENTITY? <a href="{% url 'login' %}">LOGIN NOW</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setMode(mode) {
+            const toggle = document.getElementById('modeToggle');
+            const registerType = document.getElementById('registerType');
+            const btns = document.querySelectorAll('.toggle-btn');
+            const studentInputs = document.querySelectorAll('.student-only input, .student-only select');
+            const adminInput = document.getElementById('adminSecret');
+
+            if (mode === 'admin') {
+                toggle.classList.add('admin-mode');
+                document.body.classList.add('admin-mode-active');
+                btns[0].classList.remove('active');
+                btns[1].classList.add('active');
+                registerType.value = 'admin';
+                
+                // Disable required on student fields
+                studentInputs.forEach(input => input.removeAttribute('required'));
+                // Require admin secret
+                adminInput.setAttribute('required', 'required');
+            } else {
+                toggle.classList.remove('admin-mode');
+                document.body.classList.remove('admin-mode-active');
+                btns[1].classList.remove('active');
+                btns[0].classList.add('active');
+                registerType.value = 'user';
+                
+                // Re-enable required on student fields
+                document.getElementById('fullName').setAttribute('required', 'required');
+                document.getElementById('regNum').setAttribute('required', 'required');
+                document.getElementById('course').setAttribute('required', 'required');
+                document.getElementById('year').setAttribute('required', 'required');
+                // Remove required from admin secret
+                adminInput.removeAttribute('required');
+            }
+        }
+    </script>
+</body>
+</html>
