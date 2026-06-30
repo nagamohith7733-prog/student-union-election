@@ -10,14 +10,14 @@
             }
         },
         {
-            "src": "poll/static/**",
+            "src": "staticfiles/**",
             "use": "@vercel/static"
         }
     ],
     "routes": [
         {
             "src": "/static/(.*)",
-            "dest": "poll/static/$1"
+            "dest": "staticfiles/$1"
         },
         {
             "src": "/(.*)",
