@@ -148,17 +148,13 @@ def dashboard(request):
         Vote.objects.filter(voter=request.user).values_list('position', flat=True)
     )
     
-    # Calculate winners efficiently using DB aggregation
+    # Calculate winners in Python (can't nest Max on Count in Django)
     winners = {}
     if phase and phase.phase == "Result":
-        positions = candidates.values('position').annotate(max_votes=Max('vote_count'))
-        for pos_data in positions:
-            winner = candidates.filter(
-                position=pos_data['position'],
-                vote_count=pos_data['max_votes']
-            ).first()
-            if winner:
-                winners[pos_data['position']] = winner
+        for c in candidates:
+            pos = c.position
+            if pos not in winners or c.vote_count > winners[pos].vote_count:
+                winners[pos] = c
 
     context = {
         'candidates': candidates,
@@ -257,16 +253,12 @@ def results(request):
         vote_count=Count('vote_records')
     ).order_by('position', '-vote_count')
     
-    # Calculate winners using actual vote counts
-    positions = candidates.values('position').annotate(max_votes=Max('vote_count'))
+    # Calculate winners in Python (can't nest Max on Count in Django)
     winners = {}
-    for pos_data in positions:
-        winner = candidates.filter(
-            position=pos_data['position'],
-            vote_count=pos_data['max_votes']
-        ).first()
-        if winner:
-            winners[pos_data['position']] = winner
+    for c in candidates:
+        pos = c.position
+        if pos not in winners or c.vote_count > winners[pos].vote_count:
+            winners[pos] = c
     
     context = {
         'phase': phase,
