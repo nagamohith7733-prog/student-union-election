@@ -141,7 +141,8 @@ def dashboard(request):
         messages.warning(request, "Please complete your profile information")
 
     phase = ElectionPhase.objects.order_by('-id').first()
-    candidates = Candidate.objects.all()
+    # Annotate candidates with actual vote count from Vote table (always accurate)
+    candidates = Candidate.objects.annotate(vote_count=Count('vote_records'))
     # Use values_list with flat=True for a fast set lookup instead of iterating objects
     voted_positions = set(
         Vote.objects.filter(voter=request.user).values_list('position', flat=True)
@@ -150,12 +151,11 @@ def dashboard(request):
     # Calculate winners efficiently using DB aggregation
     winners = {}
     if phase and phase.phase == "Result":
-        # Get the max votes per position in a single query
-        positions = candidates.values('position').annotate(max_votes=Max('votes'))
+        positions = candidates.values('position').annotate(max_votes=Max('vote_count'))
         for pos_data in positions:
             winner = candidates.filter(
                 position=pos_data['position'],
-                votes=pos_data['max_votes']
+                vote_count=pos_data['max_votes']
             ).first()
             if winner:
                 winners[pos_data['position']] = winner
@@ -244,7 +244,7 @@ def change_phase(request, phase_name):
     messages.success(request, f"{phase_name} phase is now active!")
     return redirect('admin:index')  # Redirect back to admin instead of dashboard
 def results(request):
-    # Get the current phase — use same logic as dashboard for consistency
+    # Get the current phase -- use same logic as dashboard for consistency
     phase = ElectionPhase.objects.order_by('-id').first()
     
     # If we're not in Results phase, redirect with message
@@ -252,23 +252,25 @@ def results(request):
         messages.warning(request, "Results are not available yet!")
         return redirect('dashboard')
     
-    # Get all candidates ordered by votes (single query)
-    candidates = Candidate.objects.all().order_by('position', '-votes')
+    # Count votes from Vote table (always accurate, never out of sync)
+    candidates = Candidate.objects.annotate(
+        vote_count=Count('vote_records')
+    ).order_by('position', '-vote_count')
     
-    # Calculate winners efficiently using DB aggregation
-    positions = Candidate.objects.values('position').annotate(max_votes=Max('votes'))
+    # Calculate winners using actual vote counts
+    positions = candidates.values('position').annotate(max_votes=Max('vote_count'))
     winners = {}
     for pos_data in positions:
-        winner = Candidate.objects.filter(
+        winner = candidates.filter(
             position=pos_data['position'],
-            votes=pos_data['max_votes']
+            vote_count=pos_data['max_votes']
         ).first()
         if winner:
             winners[pos_data['position']] = winner
     
     context = {
         'phase': phase,
-        'results': [{'candidate': c, 'votes': c.votes} for c in candidates],
+        'results': [{'candidate': c, 'votes': c.vote_count} for c in candidates],
         'winners': winners
     }
     
