@@ -43,8 +43,27 @@ class CandidateAdmin(admin.ModelAdmin):
 
 @admin.register(Vote)
 class VoteAdmin(admin.ModelAdmin):
-    list_display = ('voter', 'candidate')
-    search_fields = ('voter__username', 'candidate__name')
+    list_display = ('voter', 'candidate', 'position', 'voted_at')
+    search_fields = ('voter__username', 'candidate__name', 'position')
+    list_filter = ('position', 'voted_at')
+    actions = ['delete_selected_votes', 'reset_all_votes']
+
+    def delete_selected_votes(self, request, queryset):
+        """Delete selected votes and update candidate vote counts."""
+        for vote in queryset:
+            vote.candidate.votes = max(0, vote.candidate.votes - 1)
+            vote.candidate.save()
+        count = queryset.count()
+        queryset.delete()
+        self.message_user(request, f"Deleted {count} vote(s) and updated candidate counts.")
+    delete_selected_votes.short_description = "Delete selected votes (updates candidate counts)"
+
+    def reset_all_votes(self, request, queryset):
+        """Delete ALL votes and reset all candidate vote counts to 0."""
+        Vote.objects.all().delete()
+        Candidate.objects.all().update(votes=0)
+        self.message_user(request, "All votes deleted and candidate counts reset to 0.")
+    reset_all_votes.short_description = "RESET ALL VOTES (deletes everything, resets counts)"
 
 @admin.register(ElectionPhase)
 class ElectionPhaseAdmin(admin.ModelAdmin):
