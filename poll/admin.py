@@ -48,7 +48,8 @@ class VoteAdmin(admin.ModelAdmin):
 
 @admin.register(ElectionPhase)
 class ElectionPhaseAdmin(admin.ModelAdmin):
-    list_display = ('phase',)
+    list_display = ('phase', 'is_active')
+    list_editable = ('is_active',)
 
 @admin.register(StudentProfile)
 class StudentProfileAdmin(admin.ModelAdmin):

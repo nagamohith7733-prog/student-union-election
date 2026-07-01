@@ -244,8 +244,8 @@ def change_phase(request, phase_name):
     messages.success(request, f"{phase_name} phase is now active!")
     return redirect('admin:index')  # Redirect back to admin instead of dashboard
 def results(request):
-    # Get the current active phase
-    phase = ElectionPhase.objects.filter(is_active=True).first()
+    # Get the current phase — use same logic as dashboard for consistency
+    phase = ElectionPhase.objects.order_by('-id').first()
     
     # If we're not in Results phase, redirect with message
     if not phase or phase.phase != "Result":
