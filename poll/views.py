@@ -6,13 +6,13 @@ from .forms import StudentRegistrationForm, StudentProfileForm, CandidateForm
 from .models import Candidate, Vote, StudentProfile
 from django.contrib.auth.models import User
 from django.shortcuts import render
-from django.db.models import Count
+from django.db.models import Count, Max, F, Q, Subquery, OuterRef
 from .models import Vote, Candidate, ElectionPhase
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from .forms import UserUpdateForm, StudentProfileForm
 from django.views.decorators.csrf import csrf_protect
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 import time
 import logging
 logger = logging.getLogger(__name__)
@@ -122,43 +122,50 @@ def user_login(request):
 @login_required
 def dashboard(request):
     try:
-        student_profile, created = StudentProfile.objects.get_or_create(
-            user=request.user,
-            defaults={
-                'Full_name': request.user.username,
-                'registration_number': 'TEMP123',
-                'course': 'Unknown',
-                'year': 1
-            }
-        )
-        
+        student_profile = StudentProfile.objects.select_related('user').get(user=request.user)
         profile_pic_url = None
         if student_profile.profile_pic:
             profile_pic_url = f"{student_profile.profile_pic.url}?v={int(time.time())}"
-
+    except StudentProfile.DoesNotExist:
+        StudentProfile.objects.create(
+            user=request.user,
+            Full_name=request.user.username,
+            registration_number='TEMP123',
+            course='Unknown',
+            year=1
+        )
+        profile_pic_url = None
+        messages.warning(request, "Please complete your profile information")
     except Exception as e:
         profile_pic_url = None
         messages.warning(request, "Please complete your profile information")
 
     phase = ElectionPhase.objects.order_by('-id').first()
     candidates = Candidate.objects.all()
-    votes = Vote.objects.filter(voter=request.user)
-    voted_positions = [vote.position for vote in votes]
+    # Use values_list with flat=True for a fast set lookup instead of iterating objects
+    voted_positions = set(
+        Vote.objects.filter(voter=request.user).values_list('position', flat=True)
+    )
     
-    # Calculate winners if in Results phase
+    # Calculate winners efficiently using DB aggregation
     winners = {}
     if phase and phase.phase == "Result":
-        for candidate in candidates.order_by('-votes'):
-            position = candidate.position
-            if position not in winners or candidate.votes > winners[position].votes:
-                winners[position] = candidate
+        # Get the max votes per position in a single query
+        positions = candidates.values('position').annotate(max_votes=Max('votes'))
+        for pos_data in positions:
+            winner = candidates.filter(
+                position=pos_data['position'],
+                votes=pos_data['max_votes']
+            ).first()
+            if winner:
+                winners[pos_data['position']] = winner
 
     context = {
         'candidates': candidates,
         'phase': phase,
         'voted_positions': voted_positions,
         'profile_pic_url': profile_pic_url,
-        'winners': winners  # Make sure this line has a comma after it if there are more items
+        'winners': winners
     }
     return render(request, 'poll/dashboard.html', context)
 # Voting View
@@ -172,14 +179,17 @@ def vote(request, candidate_id):
       messages.error(request, "Voting is not active right now.")
       return redirect('dashboard')
 
-    # Check if already voted for this position
-    if Vote.objects.filter(voter=request.user, position=candidate.position).exists():
+    # Use atomic transaction for data integrity and performance
+    try:
+        with transaction.atomic():
+            # Check and create vote in one atomic block
+            # The unique_together constraint on (voter, position) prevents duplicates at DB level
+            Vote.objects.create(voter=request.user, candidate=candidate, position=candidate.position)
+            # Use F() expression for atomic increment — avoids race conditions and saves a query
+            Candidate.objects.filter(id=candidate_id).update(votes=F('votes') + 1)
+    except IntegrityError:
         messages.error(request, f"You have already voted for {candidate.position}!")
         return redirect('dashboard')
-
-    Vote.objects.create(voter=request.user, candidate=candidate, position=candidate.position)
-    candidate.votes += 1
-    candidate.save()
 
     messages.success(request, f"Successfully voted for {candidate.name}!")
     return redirect('dashboard')
@@ -234,31 +244,27 @@ def change_phase(request, phase_name):
     messages.success(request, f"{phase_name} phase is now active!")
     return redirect('admin:index')  # Redirect back to admin instead of dashboard
 def results(request):
-    # Debug: Print all phases
-    print("All phases:", list(ElectionPhase.objects.all().values()))
-    
     # Get the current active phase
     phase = ElectionPhase.objects.filter(is_active=True).first()
-    print("Active phase:", phase)
     
     # If we're not in Results phase, redirect with message
     if not phase or phase.phase != "Result":
-        print("Not in results phase or no active phase")
         messages.warning(request, "Results are not available yet!")
         return redirect('dashboard')
     
-    # Get all candidates with their votes
-    candidates = Candidate.objects.all().order_by('-votes')
-    print("Candidates:", list(candidates.values('name', 'position', 'votes')))
+    # Get all candidates ordered by votes (single query)
+    candidates = Candidate.objects.all().order_by('position', '-votes')
     
-    # Calculate winners - one per position
+    # Calculate winners efficiently using DB aggregation
+    positions = Candidate.objects.values('position').annotate(max_votes=Max('votes'))
     winners = {}
-    for candidate in candidates:
-        position = candidate.position
-        if position not in winners or candidate.votes > winners[position].votes:
-            winners[position] = candidate
-    
-    print("Winners:", {k: v.name for k, v in winners.items()})
+    for pos_data in positions:
+        winner = Candidate.objects.filter(
+            position=pos_data['position'],
+            votes=pos_data['max_votes']
+        ).first()
+        if winner:
+            winners[pos_data['position']] = winner
     
     context = {
         'phase': phase,

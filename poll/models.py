@@ -33,7 +33,7 @@ class StudentProfile(models.Model):
 # Candidate Model
 class Candidate(models.Model):
     name = models.CharField(max_length=100)
-    position = models.CharField(max_length=100)
+    position = models.CharField(max_length=100, db_index=True)
     manifesto = models.TextField()
     photo = models.ImageField(upload_to='candidates/', blank=True, null=True)
     votes = models.IntegerField(default=0)
@@ -43,10 +43,16 @@ class Candidate(models.Model):
 
 # Voting Record
 class Vote(models.Model):
-    voter = models.ForeignKey(User, on_delete=models.CASCADE)
-    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE)
-    position = models.CharField(max_length=100)
+    voter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='votes')
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='vote_records')
+    position = models.CharField(max_length=100, db_index=True)
     voted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('voter', 'position')  # DB-level duplicate vote prevention
+        indexes = [
+            models.Index(fields=['voter', 'position']),
+        ]
 
     def __str__(self):
         return f"{self.voter.username} voted for {self.candidate.name} ({self.position})"
